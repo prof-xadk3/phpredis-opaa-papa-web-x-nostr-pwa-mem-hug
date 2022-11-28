@@ -1,6 +1,7 @@
 <?php define('PHPREDIS_TESTRUN', true);
 
 require_once(dirname($_SERVER['PHP_SELF'])."/TestSuite.php");
+
 require_once(dirname($_SERVER['PHP_SELF'])."/RedisTest.php");
 require_once(dirname($_SERVER['PHP_SELF'])."/RedisArrayTest.php");
 require_once(dirname($_SERVER['PHP_SELF'])."/RedisClusterTest.php");

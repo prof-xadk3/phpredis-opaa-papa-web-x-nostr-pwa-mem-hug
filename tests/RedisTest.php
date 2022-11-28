@@ -161,7 +161,7 @@ class Redis_Test extends TestSuite
         $this->tearDown();
     }
 
-    /* Helper function to determine if the clsas has pipeline support */
+  /* Helper function to determine if the clsas has pipeline support */
     protected function havePipeline() {
         $str_constant = get_class($this->redis) . '::PIPELINE';
         return defined($str_constant);
@@ -710,19 +710,21 @@ class Redis_Test extends TestSuite
     }
 
     public function testMultiple() {
-        $this->redis->del('k1');
-        $this->redis->del('k2');
-        $this->redis->del('k3');
+        $kvals = [
+            'mget1' => 'v1',
+            'mget2' => 'v2',
+            'mget3' => 'v3'
+        ];
 
-        $this->redis->set('k1', 'v1');
-        $this->redis->set('k2', 'v2');
-        $this->redis->set('k3', 'v3');
+        $this->redis->mset($kvals);
+
         $this->redis->set(1, 'test');
 
-        $this->assertEquals(['v1'], $this->redis->mget(['k1']));
-        $this->assertEquals(['v1', 'v3', false], $this->redis->mget(['k1', 'k3', 'NoKey']));
-        $this->assertEquals(['v1', 'v2', 'v3'], $this->redis->mget(['k1', 'k2', 'k3']));
-        $this->assertEquals(['v1', 'v2', 'v3'], $this->redis->mget(['k1', 'k2', 'k3']));
+        $this->assertEquals([$kvals['mget1']], $this->redis->mget(['mget1']));
+
+        $this->assertEquals(['v1', 'v2', false], $this->redis->mget(['mget1', 'mget2', 'NoKey']));
+        $this->assertEquals(['v1', 'v2', 'v3'], $this->redis->mget(['mget1', 'mget2', 'mget3']));
+        $this->assertEquals(['v1', 'v2', 'v3'], $this->redis->mget(['mget1', 'mget2', 'mget3']));
 
         $this->redis->set('k5', '$1111111111');
         $this->assertEquals([0 => '$1111111111'], $this->redis->mget(['k5']));
@@ -731,17 +733,17 @@ class Redis_Test extends TestSuite
     }
 
     public function testMultipleBin() {
+        $kvals = [
+            'binkey-1' => random_bytes(16),
+            'binkey-2' => random_bytes(16),
+            'binkey-3' => random_bytes(16),
+        ];
 
-    $this->redis->del('k1');
-        $this->redis->del('k2');
-        $this->redis->del('k3');
+        foreach ($kvals as $k => $v) {
+            $this->redis->set($k, $v);
+        }
 
-        $this->redis->set('k1', gzcompress('v1'));
-        $this->redis->set('k2', gzcompress('v2'));
-        $this->redis->set('k3', gzcompress('v3'));
-
-        $this->assertEquals([gzcompress('v1'), gzcompress('v2'), gzcompress('v3')], $this->redis->mget(['k1', 'k2', 'k3']));
-        $this->assertEquals([gzcompress('v1'), gzcompress('v2'), gzcompress('v3')], $this->redis->mget(['k1', 'k2', 'k3']));
+        $this->assertEquals(array_values($kvals), $this->redis->mget(array_keys($kvals)));
     }
 
     public function testSetTimeout() {
@@ -5120,36 +5122,36 @@ return;
             $this->assertTrue($this->redis->get($k) === $v);
         }
 
-        $a = ['k0' => 1, 'k1' => 42, 'k2' => NULL, 'k3' => FALSE, 'k4' => ['a' => 'b']];
+        $a = ['f0' => 1, 'f1' => 42, 'f2' => NULL, 'f3' => FALSE, 'f4' => ['a' => 'b']];
 
         // hSet
-        $this->redis->del('key');
+        $this->redis->del('hash');
         foreach($a as $k => $v) {
-            $this->assertTrue(1 === $this->redis->hSet('key', $k, $v));
+            $this->assertTrue(1 === $this->redis->hSet('hash', $k, $v));
         }
 
         // hGet
         foreach($a as $k => $v) {
-            $this->assertTrue($v === $this->redis->hGet('key', $k));
+            $this->assertTrue($v === $this->redis->hGet('hash', $k));
         }
 
         // hGetAll
-        $this->assertTrue($a === $this->redis->hGetAll('key'));
-        $this->assertTrue(TRUE === $this->redis->hExists('key', 'k0'));
-        $this->assertTrue(TRUE === $this->redis->hExists('key', 'k1'));
-        $this->assertTrue(TRUE === $this->redis->hExists('key', 'k2'));
-        $this->assertTrue(TRUE === $this->redis->hExists('key', 'k3'));
-        $this->assertTrue(TRUE === $this->redis->hExists('key', 'k4'));
+        $this->assertTrue($a === $this->redis->hGetAll('hash'));
+        $this->assertTrue(TRUE === $this->redis->hExists('hash', 'f0'));
+        $this->assertTrue(TRUE === $this->redis->hExists('hash', 'f1'));
+        $this->assertTrue(TRUE === $this->redis->hExists('hash', 'f2'));
+        $this->assertTrue(TRUE === $this->redis->hExists('hash', 'f3'));
+        $this->assertTrue(TRUE === $this->redis->hExists('hash', 'f4'));
 
         // hMSet
-        $this->redis->del('key');
-        $this->redis->hMSet('key', $a);
+        $this->redis->del('hash');
+        $this->redis->hMSet('hash', $a);
         foreach($a as $k => $v) {
-            $this->assertTrue($v === $this->redis->hGet('key', $k));
+            $this->assertTrue($v === $this->redis->hGet('hash', $k));
         }
 
         // hMget
-        $hmget = $this->redis->hMget('key', array_keys($a));
+        $hmget = $this->redis->hMget('hash', array_keys($a));
         foreach($hmget as $k => $v) {
             $this->assertTrue($v === $a[$k]);
         }
@@ -5202,9 +5204,9 @@ return;
     }
 
     // check that zRem doesn't crash with a missing parameter (GitHub issue #102):
-    public function testGHIssue_102() {
-        $this->assertTrue(FALSE === @$this->redis->zRem('key'));
-    }
+//    public function testGHIssue_102() {
+//        $this->assertTrue(FALSE === @$this->redis->zRem('key'));
+//    }
 
     public function testCompressionLZF()
     {
@@ -6828,7 +6830,7 @@ return;
 
         /* Create some streams and groups */
         $streams = ['{s}-1', '{s}-2'];
-        $groups = ['g1' => 0, 'g2' => 0];
+        $groups = ['group1' => 0, 'group2' => 0];
 
         /* I'm not totally sure why Redis behaves this way, but we have to
          * send '>' first and then send ID '0' for subsequent xReadGroup calls
@@ -6841,7 +6843,7 @@ return;
         $ids = $this->addStreamsAndGroups($streams, 1, $groups);
 
         /* Test that we get get the IDs we should */
-        foreach (['g1', 'g2'] as $group) {
+        foreach (['group1', 'group2'] as $group) {
             foreach ($ids as $stream => $messages) {
                 while ($ids[$stream]) {
                     /* Read more messages */
@@ -6861,7 +6863,7 @@ return;
         /* Test COUNT option */
         for ($c = 1; $c <= 3; $c++) {
             $this->addStreamsAndGroups($streams, 3, $groups);
-            $resp = $this->redis->xReadGroup('g1', 'consumer', $query1, $c);
+            $resp = $this->redis->xReadGroup('group1', 'consumer', $query1, $c);
 
             foreach ($resp as $stream => $smsg) {
                 $this->assertEquals(count($smsg), $c);
@@ -6870,27 +6872,27 @@ return;
 
         /* Test COUNT option with NULL (should be ignored) */
         $this->addStreamsAndGroups($streams, 3, $groups, NULL);
-        $resp = $this->redis->xReadGroup('g1', 'consumer', $query1, NULL);
+        $resp = $this->redis->xReadGroup('group1', 'consumer', $query1, NULL);
         foreach ($resp as $stream => $smsg) {
             $this->assertEquals(count($smsg), 3);
         }
 
         /* Finally test BLOCK with a sloppy timing test */
-        $t1 = $this->mstime();
+        $tm1 = $this->mstime();
         $qnew = ['{s}-1' => '>', '{s}-2' => '>'];
-        $this->redis->xReadGroup('g1', 'c1', $qnew, NULL, 100);
-        $t2 = $this->mstime();
-        $this->assertTrue($t2 - $t1 >= 100);
+        $this->redis->xReadGroup('group1', 'c1', $qnew, 0, 100);
+        $tm2 = $this->mstime();
+        $this->assertTrue($tm2 - $tm1 >= 100);
 
         /* Make sure passing NULL to block doesn't block */
-        $t1 = $this->mstime();
-        $this->redis->xReadGroup('g1', 'c1', $qnew, NULL, NULL);
-        $t2 = $this->mstime();
-        $this->assertTrue($t2 - $t1 < 100);
+        $tm1 = $this->mstime();
+        $this->redis->xReadGroup('group1', 'c1', $qnew, NULL, NULL);
+        $tm2 = $this->mstime();
+        $this->assertTrue($tm2 - $tm1 < 100);
 
         /* Make sure passing bad values to BLOCK or COUNT immediately fails */
-        $this->assertFalse(@$this->redis->xReadGroup('g1', 'c1', $qnew, -1));
-        $this->assertFalse(@$this->redis->xReadGroup('g1', 'c1', $qnew, NULL, -1));
+        $this->assertFalse(@$this->redis->xReadGroup('group1', 'c1', $qnew, -1));
+        $this->assertFalse(@$this->redis->xReadGroup('group1', 'c1', $qnew, NULL, -1));
     }
 
     public function testXPending() {
@@ -7450,12 +7452,12 @@ return;
             return;
         }
 
-        $t1 = microtime(true);
+        $tm1 = microtime(true);
         $ok = $this->startSessionProcess($sessionId, 0, false, 10, true, 100000, 10);
         if ( ! $this->assertFalse($ok)) return;
-        $t2 = microtime(true);
+        $tm2 = microtime(true);
 
-        $this->assertTrue($t2 - $t1 >= 1 && $t2 - $t1 <= 3);
+        $this->assertTrue($tm2 - $tm1 >= 1 && $tm2 - $tm1 <= 3);
     }
 
     public function testSession_defaultLockRetryCount()
@@ -7486,7 +7488,7 @@ return;
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();
 
-        $t1 = microtime(true);
+        $tm1 = microtime(true);
 
         /* 1.  Start a background process, and wait until we are certain
          *     the lock was attained. */
@@ -7499,13 +7501,13 @@ return;
 
         /* 2.  Attempt to lock the same session.  This should force us to
          *     wait until the first lock is released. */
-        $t2 = microtime(true);
+        $tm2 = microtime(true);
         $ok = $this->startSessionProcess($sessionId, 0, false);
-        $t3 = microtime(true);
+        $tm3 = microtime(true);
 
         /* 3.  Verify that we did in fact have to wait for this lock */
         $this->assertTrue($ok);
-        $this->assertTrue($t3 - $t2 >= $nsec - ($t2 - $t1));
+        $this->assertTrue($tm3 - $tm2 >= $nsec - ($tm2 - $tm1));
     }
 
     public function testSession_lockWaitTime()

@@ -507,7 +507,7 @@ class Redis_Multi_Exec_Test extends TestSuite {
 
         // change both in a transaction.
         $host = $this->ra->_target('{employee:joe}');   // transactions are per-node, so we need a reference to it.
-        $tr = $this->ra->multi($host)
+        $this->ra->multi($host)
             ->set('1_{employee:joe}_group', $newGroup)
             ->set('1_{employee:joe}_salary', $newSalary)
             ->exec();
@@ -603,7 +603,6 @@ class Redis_Multi_Exec_Test extends TestSuite {
         // Get after discard, unchanged:
         $this->assertTrue($this->ra->get($key) === 'test1');
     }
-
 }
 
 // Test custom distribution function
