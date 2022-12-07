@@ -1512,10 +1512,10 @@ class Redis_Test extends TestSuite
         $this->redis->lPush('{list}0', 'b');
         $this->redis->lPush('{list}0', 'c');
 
-        $return = $this->redis->lMove('list0', 'list1', $this->getLeftConstant(), $this->getRightConstant());
+        $return = $this->redis->lMove('{list}0', '{list}1', $this->getLeftConstant(), $this->getRightConstant());
         $this->assertEquals('c', $return);
 
-        $return = $this->redis->lMove('list0', 'list1', $this->getRightConstant(), $this->getLeftConstant());
+        $return = $this->redis->lMove('{list}0', '{list}1', $this->getRightConstant(), $this->getLeftConstant());
         $this->assertEquals('a', $return);
 
         $this->assertEquals(['b'], $this->redis->lRange('{list}0', 0, -1));
@@ -1530,10 +1530,10 @@ class Redis_Test extends TestSuite
         $this->redis->del('{list}0', '{list}1');
         $this->redis->rpush('{list}0', 'a');
 
-        $this->assertEquals('a', $this->redis->blmove('{list}0', '{list}1', Redis::LEFT, Redis::LEFT, 1.0));
+        $this->assertEquals('a', $this->redis->blmove('{list}0', '{list}1', $this->getLeftConstant(), $this->getLeftConstant(), 1.0));
 
         $st = microtime(true);
-        $ret = $this->redis->blmove('{list}0', '{list}1', Redis::LEFT, Redis::LEFT, .1);
+        $ret = $this->redis->blmove('{list}0', '{list}1', $this->getLeftConstant(), $this->getLeftConstant(), .1);
         $et = microtime(true);
 
         $this->assertEquals(false, $ret);
